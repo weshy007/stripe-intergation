@@ -1,9 +1,9 @@
 import json
+import stripe
 
 from decimal import Decimal
-import stripe
 from django.conf import settings
-from django.http.response import HttpResponseNotFound, JsonResponse, HttpResponse
+from django.http.response import HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -38,7 +38,7 @@ def create_checkout_session(request, id):
         line_items=[
             {
                 'price_data': {
-                    'currency': 'usd',
+                    'currency': 'kes',
                     'product_data': {
                     'name': request.user,
                     },
@@ -62,9 +62,7 @@ def create_checkout_session(request, id):
     order.amount = int(product.price)
     order.save()
 
-    print("checkout_session ==============", checkout_session)
-
-    return JsonResponse({'session_id': checkout_session['id']})
+    return JsonResponse({'sessionId': checkout_session.id})
 
 
 def payment_success(request):
@@ -74,13 +72,12 @@ def payment_success(request):
     
     stripe.api_key = settings.STRIPE_SECRET_KEY
     session = stripe.checkout.Session.retrieve(session_id)
-    print("session ===========", session)
     order = get_object_or_404(OrderDetail, stripe_payment_intent=session_id)
     order.has_paid = True
     order.save()
-    print("order ====", order)
 
     context = {
+        'session': session,
         'order': order
     }
 
@@ -88,13 +85,11 @@ def payment_success(request):
 
 def product_create(request):
     if request.method == "POST":
-        amount = Decimal(request.POST.get("amount"))
+        amount = request.POST.get("amount")
         product = Product.objects.create(price=amount)
 
-        print("Product ID ========", product)
         return redirect("detail", product.id)
     
-   
     return render(request, "payment_create.html")
 
 
@@ -105,7 +100,6 @@ def product_edit(request, id):
         product.price = amount
         product.save()
 
-        print("Product ID ========", product)
         return redirect("detail", id)
     
     context = {
@@ -124,19 +118,15 @@ class OrderHistoryListView(ListView):
     template_name = "order_history.html"
 
 
-# class PaymentSuccessView(TemplateView):
-#     template_name = "payments/payment_success.html"
-
-#     def get(self, request, *args, **kwargs):
-#         session_id = request.GET.get('session_id')
-#         if session_id is None:
-#             return HttpResponseNotFound()
-        
-#         stripe.api_key = settings.STRIPE_SECRET_KEY
-#         session = stripe.checkout.Session.retrieve(session_id)
-#         print("session ===========", session)
-#         order = get_object_or_404(OrderDetail, stripe_payment_intent=session.id)
-#         order.has_paid = True
-#         order.save()
-#         print("order ====", order)
-#         return render(request, self.template_name)
+def PaymentSuccessView(request):
+    session_id = request.GET.get('session_id')
+    if session_id is None:
+        return HttpResponseNotFound()
+    
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    session = stripe.checkout.Session.retrieve(session_id)
+    order = get_object_or_404(OrderDetail, stripe_payment_intent=session.id)
+    order.has_paid = True
+    order.save()
+    
+    return render(request, "payment_success.html", {"order": order}) 
