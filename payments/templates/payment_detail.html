@@ -5,20 +5,20 @@
 
     <div class="card">
         <div class="card-header">
-            <h2>Confirm Deposit Amount</h2>
+            <h3>Confirm deposit amount</h3>
         </div>
         <div class="card-body">
             <div class="container row">
 
                 <div class="col-md-10">
-                    <h1>Amount: ${{ object.price }}</h1>
+                    <h4>Amount to pay: {{ object.price }} KES.</h4>
                     <input type="hidden" name="email" id="email" class="form-control" value="testuser@test.com" placeholder="Email">
                 </div>
             </div>
         </div>
         <div class="card-footer d-flex">
-            <a href="{% url 'edit' object.id %}" class="btn btn-primary">Change Amount</a>
-            <button class="btn btn-success mr-2" id="checkout-button">Deposit ${{object.price}}</button>
+            <a href="{% url 'edit' object.id %}" class="btn btn-primary">Change Amount</a> 
+            <button class="btn btn-success mr-2" id="checkout-button">Deposit ksh {{object.price}}</button>
         </div>
     </div>
 </div>
